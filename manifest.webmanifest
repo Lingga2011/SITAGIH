@@ -1,0 +1,20 @@
+{
+  "name": "SITAGIH — UPTD PPD Malingping",
+  "short_name": "SITAGIH",
+  "start_url": "https://script.google.com/macros/s/AKfycbyuVIr3prNAUn8PHPAwwT7RarGiaH8inBhGHQvEb-kx5FaQGfRDgUhejJJfq0FPM0wEMw/exec",
+  "display": "standalone",
+  "background_color": "#E9F1EC",
+  "theme_color": "#1F4B3F",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

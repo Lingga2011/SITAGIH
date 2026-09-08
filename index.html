@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>SITAGIH — UPTD PPD Malingping</title>
+
+  <!-- Icon tab browser (favicon) -->
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="48x48" href="favicon-48x48.png" />
+  <link rel="shortcut icon" href="favicon.ico" />
+
+  <!-- Icon untuk "Add to Home Screen" di HP (iOS & Android) -->
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+  <link rel="manifest" href="manifest.json" />
+
+  <!-- Tampilan mobile: warna tema browser + status bar (senada tema
+       hijau tua SITAGIH) -->
+  <meta name="theme-color" content="#1F4B3F" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SITAGIH" />
+
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      /* Hijau pucat senada tema aplikasi, supaya saat pertama kali
+         dibuka di HP tidak menampilkan latar gelap/putih polos sebelum
+         konten iframe selesai dimuat. */
+      background-color: #E9F1EC;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+    }
+
+    /* ===== Overlay Loading (menutupi jeda blank sebelum dashboard
+       dari dalam iframe /exec siap tampil) ===== */
+    #app-loading {
+      position: fixed;
+      inset: 0;
+      z-index: 999998;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      background: #E9F1EC;
+      transition: opacity .35s ease;
+    }
+    #app-loading.hide {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #app-loading .loading-badge {
+      height: 64px;
+      width: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #app-loading .loading-badge img {
+      height: 100%;
+      width: auto;
+      object-fit: contain;
+    }
+    #app-loading .loading-spinner {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 3.5px solid rgba(31, 75, 63, 0.18);
+      border-top-color: #1F4B3F;
+      animation: app-loading-spin 0.8s linear infinite;
+    }
+    #app-loading .loading-text {
+      font: 500 13.5px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #5B6259;
+      letter-spacing: .01em;
+    }
+    @keyframes app-loading-spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ===== Notifikasi Instal Aplikasi (PWA) ===== */
+    #install-banner {
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      bottom: 16px;
+      max-width: 420px;
+      margin: 0 auto;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 10px 30px rgba(20, 35, 28, 0.28), 0 2px 8px rgba(20, 35, 28, 0.12);
+      border: 1px solid rgba(31, 75, 63, 0.10);
+      z-index: 999999;
+      opacity: 0;
+      transform: translateY(16px);
+      pointer-events: none;
+      transition: opacity .28s ease, transform .28s ease;
+    }
+    #install-banner.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    #install-banner .install-icon {
+      flex: 0 0 auto;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #1F4B3F;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #install-banner .install-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    #install-banner .install-body {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    #install-banner .install-title {
+      margin: 0 0 2px;
+      font: 600 14.5px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1F4B3F;
+    }
+    #install-banner .install-desc {
+      margin: 0;
+      font: 400 12.5px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #5B6259;
+    }
+    #install-banner .install-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    #install-banner button {
+      font: 600 12.5px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      border-radius: 9px;
+      padding: 8px 14px;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+    #install-banner #install-btn-confirm {
+      background: #2E6B58;
+      color: #fff;
+    }
+    #install-banner #install-btn-confirm:hover { background: #1F4B3F; }
+    #install-banner #install-btn-dismiss {
+      background: transparent;
+      color: #5B6259;
+      border-color: rgba(91, 98, 89, 0.25);
+    }
+    #install-banner #install-btn-dismiss:hover { background: rgba(91, 98, 89, 0.08); }
+    #install-banner .install-close {
+      flex: 0 0 auto;
+      background: none;
+      border: none;
+      color: #8A9186;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 6px;
+    }
+    #install-banner .install-close:hover { background: rgba(91, 98, 89, 0.08); color: #5B6259; }
+
+    @media (max-width: 420px) {
+      #install-banner { left: 10px; right: 10px; bottom: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Overlay loading: tampil sejak awal menutupi iframe, supaya jeda
+       blank saat GAS memproses & mengirim dokumen /exec (yang berat,
+       menggabungkan semua panel + JS jadi satu HTML) tidak terlihat
+       kosong. Dihilangkan otomatis oleh skrip di bawah begitu iframe
+       selesai memuat (persis saat form login siap tampil). -->
+  <div id="app-loading" role="status" aria-live="polite">
+    <div class="loading-badge">
+      <img src="icon-192.png" alt="" />
+    </div>
+    <div class="loading-spinner" aria-hidden="true"></div>
+    <div class="loading-text">Memuat aplikasi…</div>
+  </div>
+
+  <iframe
+    id="app-frame"
+    src="https://script.google.com/macros/s/AKfycbyuVIr3prNAUn8PHPAwwT7RarGiaH8inBhGHQvEb-kx5FaQGfRDgUhejJJfq0FPM0wEMw/exec"
+    title="Aplikasi SITAGIH"
+    allow="clipboard-write"
+  ></iframe>
+
+  <!-- Notifikasi ajakan instal aplikasi, hanya muncul jika belum terinstal -->
+  <div id="install-banner" role="dialog" aria-live="polite" aria-label="Ajakan instal aplikasi">
+    <div class="install-icon">
+      <img src="icon-192.png" alt="" />
+    </div>
+    <div class="install-body">
+      <p class="install-title">Instal SITAGIH</p>
+      <p class="install-desc" id="install-desc">Pasang aplikasi ini di perangkat Anda untuk akses lebih cepat, layar penuh, dan tanpa perlu membuka browser.</p>
+      <div class="install-actions" id="install-actions">
+        <button type="button" id="install-btn-confirm">Instal Sekarang</button>
+        <button type="button" id="install-btn-dismiss">Nanti Saja</button>
+      </div>
+    </div>
+    <button type="button" class="install-close" id="install-btn-close" aria-label="Tutup">&times;</button>
+  </div>
+
+  <script>
+    // ===== Sembunyikan Overlay Loading =====
+    // Overlay dihilangkan begitu iframe /exec selesai memuat dokumennya
+    // (event 'load' iframe = dokumen GAS, termasuk form login, sudah
+    // selesai diunduh & di-parse browser). Ditambah fallback timeout
+    // (20 detik) supaya overlay tidak macet selamanya kalau event
+    // 'load' gagal terpicu (mis. karena koneksi bermasalah).
+    (function () {
+      var overlay = document.getElementById('app-loading');
+      var frame = document.getElementById('app-frame');
+      var hidden = false;
+
+      function sembunyikanLoading() {
+        if (hidden) return;
+        hidden = true;
+        overlay.classList.add('hide');
+        // Hapus dari DOM setelah transisi fade selesai supaya tidak
+        // menghalangi interaksi/klik ke iframe di bawahnya.
+        setTimeout(function () {
+          if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        }, 400);
+      }
+
+      frame.addEventListener('load', sembunyikanLoading);
+      setTimeout(sembunyikanLoading, 20000);
+    })();
+
+    // Daftarkan service worker — syarat wajib agar Chrome membuatkan
+    // WebAPK resmi (ditandatangani Google) saat "Install app"/"Add to
+    // Home screen", bukan sekadar shortcut/bookmark biasa. Dibungkus
+    // pengecekan fitur supaya tidak mengganggu browser lama yang belum
+    // mendukung service worker.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js').catch(function (err) {
+          console.warn('Pendaftaran service worker gagal:', err);
+        });
+      });
+    }
+
+    // ===== Notifikasi Instal Aplikasi (PWA) =====
+    (function () {
+      var DISMISS_KEY = 'sitagih_install_dismiss_until';
+      var COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000; // 7 hari sebelum ditawarkan lagi setelah ditutup
+
+      var banner = document.getElementById('install-banner');
+      var descEl = document.getElementById('install-desc');
+      var actionsEl = document.getElementById('install-actions');
+      var btnConfirm = document.getElementById('install-btn-confirm');
+      var btnDismiss = document.getElementById('install-btn-dismiss');
+      var btnClose = document.getElementById('install-btn-close');
+
+      var deferredPrompt = null;
+
+      function isStandalone() {
+        return window.matchMedia('(display-mode: standalone)').matches ||
+          window.navigator.standalone === true; // iOS Safari
+      }
+
+      function isDismissedForNow() {
+        var until = Number(localStorage.getItem(DISMISS_KEY) || 0);
+        return Date.now() < until;
+      }
+
+      function setDismissed() {
+        localStorage.setItem(DISMISS_KEY, String(Date.now() + COOLDOWN_MS));
+      }
+
+      function isIOS() {
+        return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+      }
+
+      function showBanner() {
+        if (isStandalone() || isDismissedForNow()) return;
+        banner.classList.add('show');
+      }
+
+      function hideBanner() {
+        banner.classList.remove('show');
+      }
+
+      // Sudah berjalan sebagai aplikasi terinstal -> tidak perlu apa-apa.
+      if (isStandalone()) {
+        // no-op
+      } else if (isIOS()) {
+        // iOS/Safari tidak mendukung beforeinstallprompt; tampilkan
+        // instruksi manual "Add to Home Screen" tanpa tombol instal otomatis.
+        descEl.textContent = 'Ketuk tombol Bagikan (Share) di Safari, lalu pilih "Tambah ke Layar Utama" untuk memasang aplikasi ini.';
+        actionsEl.removeChild(btnConfirm);
+        if (!isDismissedForNow()) {
+          window.addEventListener('load', function () {
+            setTimeout(showBanner, 1200);
+          });
+        }
+      } else {
+        // Android/desktop Chrome & sejenisnya: tangkap event resmi PWA.
+        window.addEventListener('beforeinstallprompt', function (event) {
+          event.preventDefault();
+          deferredPrompt = event;
+          showBanner();
+        });
+
+        btnConfirm.addEventListener('click', function () {
+          if (!deferredPrompt) { hideBanner(); return; }
+          hideBanner();
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.finally(function () {
+            deferredPrompt = null;
+          });
+        });
+      }
+
+      btnDismiss.addEventListener('click', function () {
+        setDismissed();
+        hideBanner();
+      });
+      btnClose.addEventListener('click', function () {
+        setDismissed();
+        hideBanner();
+      });
+
+      window.addEventListener('appinstalled', function () {
+        hideBanner();
+        localStorage.removeItem(DISMISS_KEY);
+      });
+    })();
+  </script>
+</body>
+</html>
