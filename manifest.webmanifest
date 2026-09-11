@@ -3,8 +3,8 @@
   "short_name": "SITAGIH",
   "start_url": "https://script.google.com/macros/s/AKfycbyuVIr3prNAUn8PHPAwwT7RarGiaH8inBhGHQvEb-kx5FaQGfRDgUhejJJfq0FPM0wEMw/exec",
   "display": "standalone",
-  "background_color": "#E9F1EC",
-  "theme_color": "#1F4B3F",
+  "background_color": "#F4F5F7",
+  "theme_color": "#0B2545",
   "icons": [
     {
       "src": "icon-192.png",
