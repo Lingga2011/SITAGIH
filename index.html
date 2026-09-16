@@ -259,18 +259,21 @@
     // di sini (halaman top-level, tidak dibatasi), lalu kirim hasilnya ke
     // dalam iframe lewat postMessage saat diminta.
     (function () {
-      var frame = document.getElementById('app-frame');
       window.addEventListener('message', function (event) {
         var msg = event.data;
         if (!msg || msg.type !== 'SITAGIH_MINTA_LOKASI') return;
-        if (event.source !== frame.contentWindow) return; // hanya proses permintaan dari iframe sendiri
+        // Balas langsung ke event.source (jendela pengirim SEBENARNYA),
+        // bukan ke frame.contentWindow: Apps Script merender konten di
+        // dalam iframe internalnya sendiri, jadi pengirim asli adalah
+        // frame internal itu, bukan frame#app-frame yang kita buat.
+        var pengirim = event.source;
 
         if (!navigator.geolocation) {
-          frame.contentWindow.postMessage({ type: 'SITAGIH_HASIL_LOKASI', requestId: msg.requestId, ok: false, errorCode: 0 }, '*');
+          pengirim.postMessage({ type: 'SITAGIH_HASIL_LOKASI', requestId: msg.requestId, ok: false, errorCode: 0 }, '*');
           return;
         }
         navigator.geolocation.getCurrentPosition(function (pos) {
-          frame.contentWindow.postMessage({
+          pengirim.postMessage({
             type: 'SITAGIH_HASIL_LOKASI',
             requestId: msg.requestId,
             ok: true,
@@ -279,7 +282,7 @@
             accuracy: pos.coords.accuracy || null
           }, '*');
         }, function (err) {
-          frame.contentWindow.postMessage({
+          pengirim.postMessage({
             type: 'SITAGIH_HASIL_LOKASI',
             requestId: msg.requestId,
             ok: false,
