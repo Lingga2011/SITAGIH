@@ -6,10 +6,8 @@
 // script.google.com (beda origin, di dalam iframe) dan tetap butuh
 // koneksi internet aktif seperti biasa.
 
-const CACHE_NAME = 'sitagih-shell-v1';
+const CACHE_NAME = 'sitagih-shell-v2';
 const APP_SHELL = [
-  './',
-  './index.html',
   './favicon.ico',
   './favicon-16x16.png',
   './favicon-32x32.png',
@@ -50,6 +48,28 @@ self.addEventListener('activate', function (event) {
 self.addEventListener('fetch', function (event) {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
+
+  // index.html ('/' dan '/index.html') PALING SERING berubah (di sinilah
+  // seluruh logika jembatan lokasi/foto berada) — pakai network-first
+  // supaya perbaikan kode langsung aktif begitu di-push, tanpa perlu
+  // pengguna hard refresh. Cache dipakai HANYA sebagai fallback kalau
+  // sedang offline. Aset statis (ikon, manifest) yang jarang berubah
+  // tetap cache-first seperti semula, demi kecepatan buka aplikasi.
+  const path = url.pathname;
+  const isShellHtml = path.endsWith('/') || path.endsWith('/index.html');
+
+  if (isShellHtml) {
+    event.respondWith(
+      fetch(event.request).then(function (jaringan) {
+        const salinan = jaringan.clone();
+        caches.open(CACHE_NAME).then(function (cache) { cache.put(event.request, salinan); });
+        return jaringan;
+      }).catch(function () {
+        return caches.match(event.request);
+      })
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then(function (cached) {
