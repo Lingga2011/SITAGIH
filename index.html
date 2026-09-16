@@ -251,6 +251,44 @@
       setTimeout(sembunyikanLoading, 20000);
     })();
 
+    // ===== Jembatan Lokasi (postMessage) untuk iframe SITAGIH =====
+    // GAS HtmlService yang di-iframe TIDAK bisa memakai navigator.geolocation
+    // langsung: Google mengunci Permissions-Policy geolocation untuk konten
+    // iframe lintas-origin di level server mereka sendiri, tidak bisa
+    // ditembus lewat atribut allow di iframe ini. Solusinya: ambil lokasi
+    // di sini (halaman top-level, tidak dibatasi), lalu kirim hasilnya ke
+    // dalam iframe lewat postMessage saat diminta.
+    (function () {
+      var frame = document.getElementById('app-frame');
+      window.addEventListener('message', function (event) {
+        var msg = event.data;
+        if (!msg || msg.type !== 'SITAGIH_MINTA_LOKASI') return;
+        if (event.source !== frame.contentWindow) return; // hanya proses permintaan dari iframe sendiri
+
+        if (!navigator.geolocation) {
+          frame.contentWindow.postMessage({ type: 'SITAGIH_HASIL_LOKASI', requestId: msg.requestId, ok: false, errorCode: 0 }, '*');
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(function (pos) {
+          frame.contentWindow.postMessage({
+            type: 'SITAGIH_HASIL_LOKASI',
+            requestId: msg.requestId,
+            ok: true,
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            accuracy: pos.coords.accuracy || null
+          }, '*');
+        }, function (err) {
+          frame.contentWindow.postMessage({
+            type: 'SITAGIH_HASIL_LOKASI',
+            requestId: msg.requestId,
+            ok: false,
+            errorCode: err && err.code
+          }, '*');
+        }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+      });
+    })();
+
     // Daftarkan service worker — syarat wajib agar Chrome membuatkan
     // WebAPK resmi (ditandatangani Google) saat "Install app"/"Add to
     // Home screen", bukan sekadar shortcut/bookmark biasa. Dibungkus
