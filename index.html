@@ -262,6 +262,7 @@
       window.addEventListener('message', function (event) {
         var msg = event.data;
         if (!msg || msg.type !== 'SITAGIH_MINTA_LOKASI') return;
+        console.log('[SITAGIH-lokasi][wrapper] permintaan diterima dari origin:', event.origin, msg);
         // Balas langsung ke event.source (jendela pengirim SEBENARNYA),
         // bukan ke frame.contentWindow: Apps Script merender konten di
         // dalam iframe internalnya sendiri, jadi pengirim asli adalah
@@ -273,6 +274,7 @@
           return;
         }
         navigator.geolocation.getCurrentPosition(function (pos) {
+          console.log('[SITAGIH-lokasi][wrapper] lokasi didapat, mengirim balasan requestId=', msg.requestId);
           pengirim.postMessage({
             type: 'SITAGIH_HASIL_LOKASI',
             requestId: msg.requestId,
@@ -282,6 +284,7 @@
             accuracy: pos.coords.accuracy || null
           }, '*');
         }, function (err) {
+          console.log('[SITAGIH-lokasi][wrapper] gagal ambil lokasi, kode:', err && err.code, 'pesan:', err && err.message);
           pengirim.postMessage({
             type: 'SITAGIH_HASIL_LOKASI',
             requestId: msg.requestId,
