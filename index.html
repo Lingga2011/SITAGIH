@@ -367,10 +367,16 @@
         // iOS/Safari tidak mendukung beforeinstallprompt; tampilkan
         // instruksi manual "Add to Home Screen" tanpa tombol instal otomatis.
         pakaiInstruksiManual('Ketuk tombol Bagikan (Share) di Safari, lalu pilih "Tambah ke Layar Utama" untuk memasang aplikasi ini.');
+        // CATATAN PERBAIKAN BUG: sebelumnya dibungkus window.addEventListener('load', ...),
+        // yang baru terpicu setelah SEMUA resource halaman selesai — termasuk iframe
+        // #app-frame yang memuat dokumen GAS /exec (berat, semua panel digabung jadi
+        // satu HTML). Di koneksi lambat/tidak stabil, event 'load' itu bisa sangat
+        // telat atau tidak pernah terpicu, sehingga notifikasi instal tidak pernah
+        // muncul. Skrip ini sudah berada di akhir <body>, jadi DOM (termasuk elemen
+        // banner) sudah pasti siap saat baris ini dieksekusi — tidak perlu menunggu
+        // iframe berat selesai dimuat sama sekali.
         if (!isDismissedForNow()) {
-          window.addEventListener('load', function () {
-            setTimeout(showBanner, 1200);
-          });
+          setTimeout(showBanner, 1200);
         }
       } else {
         // Android/desktop Chrome, Edge & sejenisnya: tangkap event resmi PWA
@@ -394,17 +400,19 @@
         // dll) yang TIDAK mendukung/menembakkan beforeinstallprompt tetap
         // diberi rekomendasi instal - lewat instruksi manual sesuai
         // perangkatnya, bukan otomatis dibiarkan tanpa ajakan sama sekali.
-        window.addEventListener('load', function () {
-          setTimeout(function () {
-            if (deferredPrompt || isStandalone() || isDismissedForNow()) return;
-            if (isAndroid()) {
-              pakaiInstruksiManual('Ketuk menu (⋮) browser Anda, lalu pilih "Tambahkan ke Layar Utama" atau "Instal aplikasi" untuk memasang SITAGIH.');
-            } else {
-              pakaiInstruksiManual('Klik ikon instal di bilah alamat, atau buka menu (⋮ / ···) browser lalu pilih "Instal SITAGIH…" untuk memasang aplikasi ini di komputer Anda.');
-            }
-            showBanner();
-          }, 2500);
-        });
+        // CATATAN PERBAIKAN BUG: sama seperti jalur iOS di atas, timer ini
+        // sebelumnya dibungkus window.addEventListener('load', ...) yang
+        // ikut menunggu iframe #app-frame (dokumen GAS /exec berat) selesai
+        // dimuat — dilepas supaya tidak ikut tersandera koneksi lambat.
+        setTimeout(function () {
+          if (deferredPrompt || isStandalone() || isDismissedForNow()) return;
+          if (isAndroid()) {
+            pakaiInstruksiManual('Ketuk menu (⋮) browser Anda, lalu pilih "Tambahkan ke Layar Utama" atau "Instal aplikasi" untuk memasang SITAGIH.');
+          } else {
+            pakaiInstruksiManual('Klik ikon instal di bilah alamat, atau buka menu (⋮ / ···) browser lalu pilih "Instal SITAGIH…" untuk memasang aplikasi ini di komputer Anda.');
+          }
+          showBanner();
+        }, 2500);
       }
 
       btnDismiss.addEventListener('click', function () {
