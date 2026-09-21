@@ -299,10 +299,15 @@
     // pengecekan fitur supaya tidak mengganggu browser lama yang belum
     // mendukung service worker.
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function () {
-        navigator.serviceWorker.register('./sw.js').catch(function (err) {
-          console.warn('Pendaftaran service worker gagal:', err);
-        });
+      // Didaftarkan LANGSUNG (skrip ada di akhir <body>), BUKAN di dalam
+      // window.addEventListener('load'): halaman ini memuat iframe GAS /exec
+      // yang berat, sehingga 'load' top-level bisa telat / tak terpicu di
+      // koneksi lambat — itu menunda Chrome menilai halaman "installable"
+      // dan menahan event beforeinstallprompt, sehingga tombol "Instal
+      // Sekarang" keburu digantikan instruksi manual. (Perbaikan sama yang
+      // sudah diterapkan pada penampilan banner di bawah.)
+      navigator.serviceWorker.register('./sw.js').catch(function (err) {
+        console.warn('Pendaftaran service worker gagal:', err);
       });
     }
 
@@ -313,7 +318,6 @@
 
       var banner = document.getElementById('install-banner');
       var descEl = document.getElementById('install-desc');
-      var actionsEl = document.getElementById('install-actions');
       var btnConfirm = document.getElementById('install-btn-confirm');
       var btnDismiss = document.getElementById('install-btn-dismiss');
       var btnClose = document.getElementById('install-btn-close');
@@ -351,14 +355,23 @@
         banner.classList.remove('show');
       }
 
-      // Ubah panel jadi mode "instruksi manual" (tanpa tombol Instal
-      // Sekarang) untuk browser yang TIDAK memicu event resmi
-      // beforeinstallprompt (Safari, Firefox, Samsung Internet, dll),
-      // baik di HP maupun di komputer. btnConfirm hanya dihapus SEKALI
-      // supaya tidak error kalau fungsi ini kepanggil lebih dari sekali.
+      // Ubah panel jadi mode "instruksi manual" untuk browser yang TIDAK
+      // memicu event resmi beforeinstallprompt (Safari, Firefox, Samsung
+      // Internet, dll), baik di HP maupun komputer. Tombol Instal Sekarang
+      // DISEMBUNYIKAN (bukan dihapus dari DOM) supaya bisa DIPULIHKAN lagi
+      // kalau event resmi ternyata menyala TERLAMBAT (mis. SW baru aktif
+      // setelah timer fallback 2,5 dtk jalan) — lihat pakaiTombolOtomatis.
       function pakaiInstruksiManual(teks) {
         descEl.textContent = teks;
-        if (btnConfirm.parentNode) actionsEl.removeChild(btnConfirm);
+        btnConfirm.style.display = 'none';
+      }
+
+      // Kebalikannya: pulihkan tombol "Instal Sekarang" + teks ajakan default.
+      // Dipanggil dari handler beforeinstallprompt supaya tombol tetap muncul
+      // walau fallback instruksi manual sudah keburu menyingkirkannya.
+      function pakaiTombolOtomatis() {
+        descEl.textContent = 'Pasang aplikasi ini di perangkat Anda untuk akses lebih cepat, layar penuh, dan tanpa perlu membuka browser.';
+        btnConfirm.style.display = '';
       }
 
       // Sudah berjalan sebagai aplikasi terinstal -> tidak perlu apa-apa.
@@ -385,6 +398,7 @@
         window.addEventListener('beforeinstallprompt', function (event) {
           event.preventDefault();
           deferredPrompt = event;
+          pakaiTombolOtomatis(); // pulihkan tombol bila fallback sempat menyembunyikannya
           showBanner();
         });
 
