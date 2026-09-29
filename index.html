@@ -185,6 +185,18 @@
     @media (max-width: 420px) {
       #install-banner { left: 10px; right: 10px; bottom: 10px; }
     }
+    /* ===== Skala 70% (khusus layar desktop >=1025px) =====
+       Selaras dengan skala di dalam aplikasi SITAGIH (Styles.html). Yang
+       diskalakan HANYA overlay loading & banner instal. <html>/<iframe>
+       sengaja TIDAK diberi zoom, supaya aplikasi di dalam iframe tidak
+       terkena skala dua kali (0,7 x 0,7 = 49%). Ubah angka .7 untuk skala lain. */
+    @media (min-width: 1025px) {
+      #app-loading { gap: 12.6px; }
+      #app-loading .loading-badge,
+      #app-loading .loading-spinner,
+      #app-loading .loading-text { zoom: .7; }
+      #install-banner { zoom: .7; }
+    }
   </style>
 </head>
 <body>
